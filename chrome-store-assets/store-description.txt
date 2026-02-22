@@ -1,0 +1,18 @@
+DOM Review is a Chrome extension that bridges the gap between what you see in the browser and what your AI coding agent needs to fix. 
+
+Built for the vibecoding workflow: you look at your app, point at what's off, describe the fix in plain English, and your AI agent reads your reviews straight from Chrome and makes the changes.
+
+How it works:
+1. Click any element on your page
+2. Write a comment (e.g., "make this bolder")
+3. Your AI Agent reads the reviews from the live page via Chrome DevTools MCP and edits the code!
+
+DOM Review captures all the necessary context for your AI Agent:
+- CSS selectors (smart generation that avoids utility classes like Tailwind/Bootstrap)
+- Computed styles (colors, fonts, display, dimensions)
+- Accessibility attributes (ARIA roles, labels, tab index)
+- Framework component info (detects React, Vue, Angular components and props)
+
+DOM Review comes with a Sidebar Panel where you can manage all your reviews, filter them by status, and sort by date, priority, or category. You can also export/import reviews as JSON files if you're not using MCP yet.
+
+Say goodbye to copy-pasting selectors and losing context. Let your AI agent read the DOM directly!

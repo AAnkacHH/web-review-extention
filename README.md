@@ -335,6 +335,10 @@ If your IDE doesn't support MCP yet, use the export workflow:
    context (styles, component names, props) to make accurate changes.
    ```
 
+## Privacy Policy
+
+DOM Review does not collect, store, or transmit any personal data. All data remains in your browser's localStorage.
+
 ## Architecture
 
 ```text
