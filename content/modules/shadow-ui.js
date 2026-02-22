@@ -380,6 +380,35 @@
       line-height: 1.4;
     }
 
+    /* === Reply Input === */
+    .dr-reply-input-wrap {
+      display: flex;
+      gap: 6px;
+      align-items: flex-end;
+      margin: 8px 0;
+    }
+    .dr-reply-input {
+      flex: 1;
+      background: var(--dr-bg-primary);
+      color: var(--dr-text-primary);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-family: var(--dr-font);
+      font-size: 12px;
+      resize: none;
+      outline: none;
+      overflow: hidden;
+      min-height: 30px;
+      line-height: 1.4;
+      transition: border-color 0.15s;
+    }
+    .dr-reply-input:focus { border-color: var(--dr-accent); }
+    .dr-reply-input::placeholder { color: var(--dr-text-secondary); opacity: 0.5; }
+    .dr-reply-send {
+      flex-shrink: 0;
+    }
+
     /* === Collapsible Context === */
     .dr-context-toggle {
       display: flex;

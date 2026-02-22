@@ -134,6 +134,10 @@
         <div class="dr-review-selector">${escapeHtml(review.selector)}</div>
         <div class="dr-review-comment">${escapeHtml(review.comment)}</div>
         ${renderReplies(review.replies)}
+        <div class="dr-reply-input-wrap" data-review-id="${escapeHtml(review.id)}">
+          <textarea class="dr-reply-input" data-reply-for="${escapeHtml(review.id)}" placeholder="Add a comment..." rows="1"></textarea>
+          <button class="dr-btn dr-btn--small dr-btn--primary dr-reply-send dr-hidden" data-action="send-reply" data-id="${escapeHtml(review.id)}">Send</button>
+        </div>
         ${renderContextBlock(review.context)}
         <div class="dr-review-meta">${formatDate(review.created)}${review.updated ? ' (edited)' : ''}</div>
         <div class="dr-review-actions">
@@ -223,14 +227,60 @@
       if (!btn) return;
       const action = btn.dataset.action;
       const id = btn.dataset.id;
+      if (action === 'send-reply') {
+        const textarea = list.querySelector(`textarea[data-reply-for="${CSS.escape(id)}"]`);
+        if (!textarea) return;
+        const text = textarea.value.trim();
+        if (!text) return;
+        handleAction('add-reply', id, text);
+        return;
+      }
       handleAction(action, id);
+    });
+
+    // Reply input: auto-grow + show/hide send button
+    list.addEventListener('input', (e) => {
+      if (!e.target.matches('.dr-reply-input')) return;
+      e.target.style.height = 'auto';
+      e.target.style.height = e.target.scrollHeight + 'px';
+      const wrap = e.target.closest('.dr-reply-input-wrap');
+      const sendBtn = wrap && wrap.querySelector('.dr-reply-send');
+      if (sendBtn) {
+        if (e.target.value.trim()) sendBtn.classList.remove('dr-hidden');
+        else sendBtn.classList.add('dr-hidden');
+      }
+    });
+
+    // Reply input: Ctrl+Enter / Cmd+Enter to send
+    list.addEventListener('keydown', (e) => {
+      if (!e.target.matches('.dr-reply-input')) return;
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        const text = e.target.value.trim();
+        if (!text) return;
+        const reviewId = e.target.dataset.replyFor;
+        handleAction('add-reply', reviewId, text);
+      }
     });
   }
 
-  function handleAction(action, id) {
+  function handleAction(action, id, extra) {
     const { store, commentPanel } = window.__domReview;
 
     switch (action) {
+      case 'add-reply': {
+        const review = store.get(id);
+        if (!review) return;
+        const replies = (review.replies || []).slice();
+        replies.push({
+          id: 'rp_' + Date.now(),
+          comment: extra,
+          author: 'user',
+          created: new Date().toISOString(),
+        });
+        store.update(id, { replies });
+        break;
+      }
       case 'locate': {
         const review = store.get(id);
         if (!review) return;
