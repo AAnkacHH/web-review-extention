@@ -137,6 +137,63 @@ Each review contains:
 
 The AI gets everything it needs in one shot: which element, what's wrong, what the element looks like, what component it belongs to, and where the source file is.
 
+The JSON also includes an `api` block that tells the agent how to use `window.__domReviewAPI` for adding replies, resolving reviews, and more. See [Agent API](#agent-api) for details.
+
+## Agent API
+
+DOM Review exposes a programmatic API on the page at `window.__domReviewAPI`. AI agents using Chrome DevTools MCP can call it via `evaluate_script` to add comments, reply to reviews, and resolve/unresolve — no DOM hacking required.
+
+The API is self-documented: the `#dom-review-data` JSON block includes an `api` field describing all available methods, so agents discover it automatically when reading review data.
+
+### Available Methods
+
+All methods are **synchronous** and return `{ success: true, data? }` or `{ success: false, error }`.
+
+| Method | Arguments | Description |
+| --- | --- | --- |
+| `getReviews()` | — | Get all reviews for the current page |
+| `getReview(reviewId)` | `string` | Get a single review by ID |
+| `addComment({...})` | `{ selector, comment, priority?, category? }` | Add a new review on a DOM element |
+| `addReply({...})` | `{ reviewId, comment, author? }` | Add a reply to an existing review |
+| `resolveReview(reviewId)` | `string` | Mark a review as resolved |
+| `unresolveReview(reviewId)` | `string` | Reopen a resolved review |
+| `updateComment({...})` | `{ reviewId, comment?, priority?, category? }` | Update review text or metadata |
+| `deleteReview(reviewId)` | `string` | Delete a review |
+
+### Example: Agent Workflow
+
+```javascript
+// Read all reviews
+const reviews = window.__domReviewAPI.getReviews();
+
+// Add a new comment on an element
+window.__domReviewAPI.addComment({
+  selector: 'button.submit-btn',
+  comment: 'Missing aria-label for screen readers',
+  priority: 'high',
+  category: 'a11y'
+});
+
+// Reply to a review after fixing it
+window.__domReviewAPI.addReply({
+  reviewId: 'r_1708888800000',
+  comment: 'Fixed. Added aria-label="Submit form" in SubmitButton.tsx',
+  author: 'claude-code'
+});
+
+// Resolve the review
+window.__domReviewAPI.resolveReview('r_1708888800000');
+```
+
+### How It Works Under the Hood
+
+The API uses a **two-part bridge** to cross Chrome's world boundary:
+
+- `agent-api-bridge.js` runs in the **MAIN world** (page context) — this is what `evaluate_script` can access
+- `agent-api-handler.js` runs in the **ISOLATED world** (extension sandbox) — this has access to the real review store
+
+Communication happens via synchronous DOM events and attributes (same pattern as the framework detection bridge), so all API calls return results immediately.
+
 ## Features
 
 ### Element Selection
@@ -291,6 +348,8 @@ manifest.json
 │       ├── selector-generator.js   # CSS selector & XPath generation
 │       ├── framework-detector.js   # Isolated↔Main world bridge
 │       ├── framework-bridge.js     # MAIN world framework detection
+│       ├── agent-api-bridge.js     # MAIN world agent API (window.__domReviewAPI)
+│       ├── agent-api-handler.js    # ISOLATED world API request handler
 │       ├── context-capture.js      # Element context extraction
 │       ├── shadow-ui.js            # Shadow DOM UI host
 │       ├── comment-panel.js        # Comment form
@@ -309,6 +368,51 @@ manifest.json
 - **Dual-world injection** — framework detection runs in the MAIN world (access to page JS context) while everything else runs in the ISOLATED world (Chrome extension sandbox)
 - **No build step** — vanilla JS, no bundler, no dependencies. Load and go
 - **No external network requests** — everything stays local
+
+## Claude Code Integration
+
+To make Claude Code automatically understand DOM Review without any discovery step, add the workflow instructions to your setup.
+
+### Option A: Per-Project (CLAUDE.md)
+
+Copy the template into your project root:
+
+```bash
+cp path/to/dom-review-extension/docs/CLAUDE.md ./CLAUDE.md
+# or append to existing CLAUDE.md
+cat path/to/dom-review-extension/docs/CLAUDE.md >> ./CLAUDE.md
+```
+
+### Option B: Global (all projects)
+
+Add to `~/.claude/settings.json`:
+
+```json
+{
+  "permissions": {
+    "allow": [
+      "mcp__chrome-devtools__evaluate_script",
+      "mcp__chrome-devtools__take_snapshot",
+      "mcp__chrome-devtools__take_screenshot",
+      "mcp__chrome-devtools__navigate_page",
+      "mcp__chrome-devtools__click",
+      "mcp__chrome-devtools__list_pages",
+      "mcp__chrome-devtools__select_page"
+    ]
+  },
+  "userInstructions": "This project uses the DOM Review Chrome extension with Chrome DevTools MCP server (chrome-devtools). To read reviews: use mcp__chrome-devtools__evaluate_script with function `() => JSON.parse(document.getElementById('dom-review-data')?.textContent || '{\"reviews\":[]}')`. To interact programmatically, use mcp__chrome-devtools__evaluate_script to call window.__domReviewAPI methods — getReviews(), getReview(id), addComment({selector, comment, priority?, category?}), addReply({reviewId, comment, author?}), resolveReview(id), unresolveReview(id), updateComment({reviewId, comment?, priority?, category?}), deleteReview(id). All methods are synchronous, return {success, data?, error?}. evaluate_script requires arrow function syntax: () => window.__domReviewAPI.methodName(...). After fixing a review, call addReply with a summary of changes, then resolveReview to mark it done."
+}
+```
+
+### Usage
+
+Once configured, just tell Claude Code:
+
+```
+Check the page in Chrome for DOM Review comments and fix them.
+```
+
+Claude Code will read the reviews, fix the code, reply with what was changed, and resolve each review — no manual steps needed.
 
 ## Vibecoding Workflow Tips
 

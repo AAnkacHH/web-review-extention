@@ -68,6 +68,7 @@
         created: new Date().toISOString(),
         updated: null,
         context: formData.context,
+        replies: [],
       });
     }
   });
