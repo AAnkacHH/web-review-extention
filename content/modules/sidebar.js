@@ -56,6 +56,53 @@
     } catch { return iso; }
   }
 
+  function renderContextBlock(context) {
+    if (!context) return '';
+    const rows = [];
+    const fw = context.framework;
+    if (fw) {
+      rows.push(`<div class="dr-context-section">Framework</div>`);
+      rows.push(contextRow('framework', fw.framework));
+      rows.push(contextRow('component', fw.componentName));
+      if (fw.filePath) rows.push(contextRow('file', fw.filePath));
+      if (fw.parentComponentName) rows.push(contextRow('parent', fw.parentComponentName));
+      if (fw.props && Object.keys(fw.props).length > 0) {
+        rows.push(`<div class="dr-context-section">Props</div>`);
+        for (const [k, v] of Object.entries(fw.props)) {
+          rows.push(contextRow(k, typeof v === 'string' ? v : JSON.stringify(v)));
+        }
+      }
+      if (fw.state && Object.keys(fw.state).length > 0) {
+        rows.push(`<div class="dr-context-section">State</div>`);
+        for (const [k, v] of Object.entries(fw.state)) {
+          rows.push(contextRow(k, typeof v === 'string' ? v : JSON.stringify(v)));
+        }
+      }
+    }
+    rows.push(`<div class="dr-context-section">Element</div>`);
+    if (context.tagName) rows.push(contextRow('tag', context.tagName));
+    if (context.styles) {
+      if (context.styles.fontSize) rows.push(contextRow('font', context.styles.fontSize));
+      if (context.styles.color) rows.push(contextRow('color', context.styles.color));
+      if (context.styles.display) rows.push(contextRow('display', context.styles.display));
+    }
+    if (context.a11y && context.a11y.role) rows.push(contextRow('role', context.a11y.role));
+    if (rows.length === 0) return '';
+    const uid = 'ctx-' + Math.random().toString(36).slice(2, 8);
+    return `
+      <button class="dr-context-toggle" data-toggle="${uid}">
+        <span class="dr-context-arrow" id="arrow-${uid}">\u25B6</span> Context
+      </button>
+      <div class="dr-context-body" id="${uid}">
+        ${rows.join('')}
+      </div>
+    `;
+  }
+
+  function contextRow(key, value) {
+    return `<div class="dr-context-row"><span class="dr-context-key">${escapeHtml(key)}</span><span class="dr-context-val" title="${escapeHtml(String(value))}">${escapeHtml(String(value))}</span></div>`;
+  }
+
   function renderCard(review, index) {
     const priorityClass = `dr-pill--${review.priority}`;
     const resolvedClass = review.resolved ? ' dr-resolved' : '';
@@ -69,6 +116,7 @@
         </div>
         <div class="dr-review-selector">${escapeHtml(review.selector)}</div>
         <div class="dr-review-comment">${escapeHtml(review.comment)}</div>
+        ${renderContextBlock(review.context)}
         <div class="dr-review-meta">${formatDate(review.created)}${review.updated ? ' (edited)' : ''}</div>
         <div class="dr-review-actions">
           <button class="dr-btn dr-btn--small" data-action="locate" data-id="${escapeHtml(review.id)}">Locate</button>
@@ -141,9 +189,18 @@
       render();
     });
 
-    // Card actions (event delegation)
+    // Context toggle (event delegation)
     const list = container.querySelector('#dr-sidebar-list');
     list.addEventListener('click', (e) => {
+      const toggle = e.target.closest('[data-toggle]');
+      if (toggle) {
+        const uid = toggle.dataset.toggle;
+        const body = container.querySelector('#' + uid);
+        const arrow = container.querySelector('#arrow-' + uid);
+        if (body) body.classList.toggle('open');
+        if (arrow) arrow.classList.toggle('open');
+        return;
+      }
       const btn = e.target.closest('[data-action]');
       if (!btn) return;
       const action = btn.dataset.action;

@@ -54,6 +54,10 @@
     ).join('');
 
     const contextItems = context ? [
+      context.framework && context.framework.framework && `\u2699 ${escapeHtml(context.framework.framework)}`,
+      context.framework && context.framework.componentName && `component: ${escapeHtml(context.framework.componentName)}`,
+      context.framework && context.framework.filePath && `file: ${escapeHtml(context.framework.filePath)}`,
+      context.framework && context.framework.parentComponentName && `parent: ${escapeHtml(context.framework.parentComponentName)}`,
       context.tagName && `tag: ${escapeHtml(context.tagName)}`,
       context.styles && context.styles.fontSize && `font: ${escapeHtml(context.styles.fontSize)}`,
       context.styles && context.styles.color && `color: ${escapeHtml(context.styles.color)}`,

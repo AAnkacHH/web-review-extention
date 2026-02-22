@@ -17,7 +17,8 @@
       text: '',
       boundingBox: { x: 0, y: 0, w: 0, h: 0 },
       styles: {},
-      a11y: { role: 'unknown', label: '' }
+      a11y: { role: 'unknown', label: '' },
+      framework: null
     };
   }
 
@@ -58,7 +59,10 @@
           ariaDescribedby: element.getAttribute('aria-describedby'),
           ariaExpanded: element.getAttribute('aria-expanded'),
           tabIndex: element.getAttribute('tabindex')
-        }
+        },
+        framework: window.__domReview.frameworkDetector
+          ? window.__domReview.frameworkDetector.detect(element)
+          : null
       };
     } catch (_err) {
       return fallback();
