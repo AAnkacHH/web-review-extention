@@ -1,8 +1,8 @@
 /**
- * DOM Review — Popup Script (Track 10, Layer 3)
+ * DOM Review — Popup Script
  *
  * Shows review count, provides copy-prompt templates,
- * and export/import buttons.
+ * export/import buttons, and allowed-sites management.
  */
 (() => {
   'use strict';
@@ -15,7 +15,47 @@
   const promptToggle = document.getElementById('btn-prompt-toggle');
   const promptGroup = document.getElementById('prompt-group');
 
+  const toggleBtn = document.getElementById('toggle-btn');
+
+  const siteList = document.getElementById('site-list');
+  const addSiteInput = document.getElementById('add-site-input');
+  const addSiteBtn = document.getElementById('add-site-btn');
+  const addSiteError = document.getElementById('add-site-error');
+
+  const DEFAULT_PATTERNS = ['http://localhost/*', 'http://127.0.0.1/*'];
+
   let reviewData = null;
+  let extensionEnabled = true;
+
+  // --- Toggle ---
+
+  function updateToggleUI(enabled) {
+    extensionEnabled = enabled;
+    toggleBtn.classList.toggle('active', enabled);
+    toggleBtn.title = enabled ? 'Disable extension' : 'Enable extension';
+    document.body.classList.toggle('disabled', !enabled);
+  }
+
+  async function toggleExtension() {
+    const newState = !extensionEnabled;
+    await chrome.runtime.sendMessage({ type: 'SET_ENABLED', enabled: newState });
+    updateToggleUI(newState);
+
+    // Show/hide UI on active tab
+    chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
+      if (!tab) return;
+      chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        func: (enabled) => {
+          const host = document.getElementById('dom-review-host');
+          if (host) host.style.display = enabled ? '' : 'none';
+        },
+        args: [newState]
+      }).catch(() => {});
+    });
+
+    showToast(newState ? 'Enabled. Reload tabs.' : 'Disabled. Reload tabs.');
+  }
 
   // --- Prompt templates ---
 
@@ -61,9 +101,154 @@ Instructions:
 - Provide code changes with explanations.`
   };
 
+  // --- Pattern helpers ---
+
+  function normalizeInput(input) {
+    let val = input.trim();
+    if (!val) return null;
+
+    // If already a full match pattern, return as-is
+    if (/^https?:\/\/.+\/\*$/.test(val)) {
+      // Force http only
+      return val.replace(/^https:/, 'http:');
+    }
+
+    // Strip protocol if provided
+    val = val.replace(/^https?:\/\//, '');
+    // Strip trailing slash
+    val = val.replace(/\/+$/, '');
+
+    if (!val) return null;
+
+    return `http://${val}/*`;
+  }
+
+  function isDefaultPattern(pattern) {
+    return DEFAULT_PATTERNS.includes(pattern);
+  }
+
+  function urlMatchesPattern(url, pattern) {
+    // Convert match pattern to regex: http://host:port/* -> ^http://host:port/.*$
+    const escaped = pattern
+      .replace(/[.+?^${}()|[\]\\]/g, '\\$&')
+      .replace(/\*/g, '.*');
+    try {
+      return new RegExp('^' + escaped + '$').test(url);
+    } catch {
+      return false;
+    }
+  }
+
+  function urlMatchesAnyPattern(url, patterns) {
+    return patterns.some(p => urlMatchesPattern(url, p));
+  }
+
+  // --- Allowed Sites rendering ---
+
+  function renderAllowedSites(customPatterns) {
+    siteList.innerHTML = '';
+
+    // Default patterns (non-removable)
+    for (const pattern of DEFAULT_PATTERNS) {
+      const li = document.createElement('li');
+      li.className = 'site-item site-item--default';
+      li.innerHTML = `<span class="site-label">${escapeHtml(pattern)}</span><span class="site-tag">default</span>`;
+      siteList.appendChild(li);
+    }
+
+    // Custom patterns (removable)
+    for (const pattern of customPatterns) {
+      const li = document.createElement('li');
+      li.className = 'site-item';
+      li.innerHTML = `<span class="site-label">${escapeHtml(pattern)}</span>`;
+      const removeBtn = document.createElement('button');
+      removeBtn.className = 'site-remove';
+      removeBtn.textContent = '\u00d7';
+      removeBtn.title = 'Remove';
+      removeBtn.addEventListener('click', () => removePattern(pattern));
+      li.appendChild(removeBtn);
+      siteList.appendChild(li);
+    }
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  function showError(msg) {
+    addSiteError.textContent = msg;
+    addSiteError.style.display = 'block';
+  }
+
+  function clearError() {
+    addSiteError.style.display = 'none';
+    addSiteError.textContent = '';
+  }
+
+  // --- Add / Remove patterns ---
+
+  async function addPattern() {
+    clearError();
+    const pattern = normalizeInput(addSiteInput.value);
+
+    if (!pattern) {
+      showError('Enter a host like 192.168.1.50:3000');
+      return;
+    }
+
+    if (isDefaultPattern(pattern)) {
+      showError('This site is already included by default.');
+      return;
+    }
+
+    // Request host permission from the user
+    let granted;
+    try {
+      granted = await chrome.permissions.request({ origins: [pattern] });
+    } catch (err) {
+      showError('Invalid pattern. Try: host:port or http://host/*');
+      return;
+    }
+
+    if (!granted) {
+      showError('Permission denied by browser.');
+      return;
+    }
+
+    // Save via service worker
+    const response = await chrome.runtime.sendMessage({ type: 'ADD_CUSTOM_PATTERN', pattern });
+    if (response && response.success) {
+      addSiteInput.value = '';
+      renderAllowedSites(response.patterns);
+      showToast('Site added! Reload open tabs.');
+    } else if (response && response.error) {
+      showError(response.error);
+    }
+  }
+
+  async function removePattern(pattern) {
+    const response = await chrome.runtime.sendMessage({ type: 'REMOVE_CUSTOM_PATTERN', pattern });
+    if (response && response.success) {
+      renderAllowedSites(response.patterns);
+      showToast('Site removed.');
+    }
+  }
+
   // --- Init ---
 
   function init() {
+    // Load enabled state
+    chrome.runtime.sendMessage({ type: 'GET_ENABLED' }, (enabled) => {
+      updateToggleUI(enabled !== false);
+    });
+
+    // Always load and render allowed sites
+    chrome.runtime.sendMessage({ type: 'GET_CUSTOM_PATTERNS' }, (customPatterns) => {
+      renderAllowedSites(customPatterns || []);
+    });
+
     chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
       if (!tab || !tab.url) {
         showNoPage();
@@ -71,31 +256,37 @@ Instructions:
       }
 
       const url = tab.url;
-      if (!url.startsWith('http://localhost') && !url.startsWith('http://127.0.0.1')) {
-        showNoPage();
-        return;
-      }
 
-      // Fetch review data from content script
-      chrome.runtime.sendMessage({ type: 'GET_REVIEWS' }, (raw) => {
-        if (chrome.runtime.lastError) {
-          statusEl.textContent = 'Could not connect to page.';
+      // Check against default + custom patterns
+      chrome.runtime.sendMessage({ type: 'GET_CUSTOM_PATTERNS' }, (customPatterns) => {
+        const allPatterns = [...DEFAULT_PATTERNS, ...(customPatterns || [])];
+
+        if (!urlMatchesAnyPattern(url, allPatterns)) {
+          showNoPage();
           return;
         }
 
-        if (!raw) {
-          showReady(0);
-          return;
-        }
+        // Fetch review data from content script
+        chrome.runtime.sendMessage({ type: 'GET_REVIEWS' }, (raw) => {
+          if (chrome.runtime.lastError) {
+            statusEl.textContent = 'Could not connect to page.';
+            return;
+          }
 
-        try {
-          reviewData = JSON.parse(raw);
-          const total = reviewData.reviews.length;
-          const open = reviewData.reviews.filter(r => !r.resolved).length;
-          showReady(total, open);
-        } catch {
-          showReady(0);
-        }
+          if (!raw) {
+            showReady(0);
+            return;
+          }
+
+          try {
+            reviewData = JSON.parse(raw);
+            const total = reviewData.reviews.length;
+            const open = reviewData.reviews.filter(r => !r.resolved).length;
+            showReady(total, open);
+          } catch {
+            showReady(0);
+          }
+        });
       });
     });
   }
@@ -153,7 +344,6 @@ Instructions:
     navigator.clipboard.writeText(text).then(() => {
       showToast('Copied!');
     }).catch(() => {
-      // Fallback
       const ta = document.createElement('textarea');
       ta.value = text;
       document.body.appendChild(ta);
@@ -192,6 +382,15 @@ Instructions:
         }
       });
     });
+  });
+
+  // Toggle
+  toggleBtn.addEventListener('click', toggleExtension);
+
+  // Add site
+  addSiteBtn.addEventListener('click', addPattern);
+  addSiteInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') addPattern();
   });
 
   init();

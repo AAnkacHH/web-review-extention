@@ -5,6 +5,7 @@
   "description": "Visual code review for live UI — leave comments on DOM elements for AI agents",
   "permissions": ["activeTab", "storage", "scripting"],
   "host_permissions": ["http://localhost/*", "http://127.0.0.1/*"],
+  "optional_host_permissions": ["http://*/*"],
   "action": {
     "default_popup": "popup/popup.html",
     "default_icon": {
