@@ -103,6 +103,23 @@
     return `<div class="dr-context-row"><span class="dr-context-key">${escapeHtml(key)}</span><span class="dr-context-val" title="${escapeHtml(String(value))}">${escapeHtml(String(value))}</span></div>`;
   }
 
+  function renderReplies(replies) {
+    if (!replies || replies.length === 0) return '';
+    return `
+      <div class="dr-review-replies">
+        ${replies.map(r => `
+          <div class="dr-reply">
+            <div class="dr-reply-header">
+              <span class="dr-reply-author">${escapeHtml(r.author || 'unknown')}</span>
+              <span class="dr-reply-date">${formatDate(r.created)}</span>
+            </div>
+            <div class="dr-reply-text">${escapeHtml(r.comment)}</div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+
   function renderCard(review, index) {
     const priorityClass = `dr-pill--${review.priority}`;
     const resolvedClass = review.resolved ? ' dr-resolved' : '';
@@ -116,6 +133,7 @@
         </div>
         <div class="dr-review-selector">${escapeHtml(review.selector)}</div>
         <div class="dr-review-comment">${escapeHtml(review.comment)}</div>
+        ${renderReplies(review.replies)}
         ${renderContextBlock(review.context)}
         <div class="dr-review-meta">${formatDate(review.created)}${review.updated ? ' (edited)' : ''}</div>
         <div class="dr-review-actions">

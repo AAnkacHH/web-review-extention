@@ -347,6 +347,39 @@
       flex-wrap: wrap;
     }
 
+    /* === Replies === */
+    .dr-review-replies {
+      margin: 8px 0;
+      padding-left: 12px;
+      border-left: 2px solid var(--dr-accent);
+    }
+    .dr-reply {
+      margin-bottom: 6px;
+    }
+    .dr-reply:last-child {
+      margin-bottom: 0;
+    }
+    .dr-reply-header {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 2px;
+    }
+    .dr-reply-author {
+      font-weight: 600;
+      font-size: 11px;
+      color: var(--dr-accent);
+    }
+    .dr-reply-date {
+      font-size: 11px;
+      color: var(--dr-text-secondary);
+    }
+    .dr-reply-text {
+      font-size: 12px;
+      color: var(--dr-text-primary);
+      line-height: 1.4;
+    }
+
     /* === Collapsible Context === */
     .dr-context-toggle {
       display: flex;

@@ -42,7 +42,27 @@
     } catch { /* invalid selector */ }
   }
 
+  // --- Agent API descriptor (included in DOM JSON for LLM discoverability) ---
+
+  const API_DESCRIPTOR = {
+    hint: 'Use window.__domReviewAPI in evaluate_script to interact with reviews programmatically. All methods are synchronous and return { success, data?, error? }.',
+    methods: {
+      getReviews: { args: '', description: 'Get all reviews for current page' },
+      getReview: { args: 'reviewId', description: 'Get a single review by ID' },
+      addComment: { args: '{ selector, comment, priority?, category? }', description: 'Add a new review on a DOM element' },
+      addReply: { args: '{ reviewId, comment, author? }', description: 'Add a reply to an existing review' },
+      resolveReview: { args: 'reviewId', description: 'Mark review as resolved' },
+      unresolveReview: { args: 'reviewId', description: 'Reopen a resolved review' },
+      updateComment: { args: '{ reviewId, comment?, priority?, category? }', description: 'Update review text or metadata' },
+      deleteReview: { args: 'reviewId', description: 'Delete a review' },
+    }
+  };
+
   // --- Persistence ---
+
+  function _domPayload() {
+    return { ...data, api: API_DESCRIPTOR };
+  }
 
   function saveToDOM() {
     clearTimeout(domSaveTimer);
@@ -54,7 +74,7 @@
         el.id = 'dom-review-data';
         document.body.appendChild(el);
       }
-      el.textContent = JSON.stringify(data, null, 2);
+      el.textContent = JSON.stringify(_domPayload(), null, 2);
     }, 300);
   }
 
@@ -82,7 +102,7 @@
         el.id = 'dom-review-data';
         document.body.appendChild(el);
       }
-      el.textContent = JSON.stringify(data, null, 2);
+      el.textContent = JSON.stringify(_domPayload(), null, 2);
     } catch (e) {
       console.warn('[DOM Review] Failed to load from storage:', e);
     }
