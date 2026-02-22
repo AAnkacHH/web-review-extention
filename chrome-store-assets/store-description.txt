@@ -16,3 +16,7 @@ DOM Review captures all the necessary context for your AI Agent:
 DOM Review comes with a Sidebar Panel where you can manage all your reviews, filter them by status, and sort by date, priority, or category. You can also export/import reviews as JSON files if you're not using MCP yet.
 
 Say goodbye to copy-pasting selectors and losing context. Let your AI agent read the DOM directly!
+
+Source Code & Contributions:
+The source code for DOM Review is open source and publicly available on [GitHub](https://github.com/AAnkacHH/web-review-extention).
+
