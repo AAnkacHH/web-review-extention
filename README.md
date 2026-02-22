@@ -7,7 +7,7 @@ DOM Review is a Chrome extension that bridges the gap between what you *see* in 
 Built for the **vibecoding workflow**: you look at your app, point at what's off, describe the fix in plain English, and the AI reads your reviews straight from Chrome and makes the changes.
 
 ![Chrome Web Store](https://img.shields.io/badge/Manifest-V3-blue)
-![Version](https://img.shields.io/badge/version-0.1.1-green)
+![Version](https://img.shields.io/badge/version-1.1.0-green)
 ![License](https://img.shields.io/badge/license-MIT-yellow)
 
 ---
@@ -287,18 +287,19 @@ The popup includes ready-made prompts you can copy:
 
 4. Click **Load unpacked** and select the project folder
 
-5. The DOM Review icon appears in your toolbar. Navigate to any `localhost` page to start reviewing.
+5. The DOM Review icon appears in your toolbar. Navigate to any `localhost` page to start reviewing. To use on other dev sites, see [Custom Domains](#custom-domains).
 
 ### Permissions
 
 | Permission                  | Why                              |
 | --------------------------- | -------------------------------- |
 | `activeTab`                 | Access the current tab's DOM     |
-| `storage`                   | Persist reviews across sessions  |
-| `scripting`                 | Inject export/import handlers    |
-| `localhost` / `127.0.0.1`   | Only runs on local dev servers   |
+| `storage`                   | Persist reviews and settings     |
+| `scripting`                 | Inject content scripts dynamically |
+| `localhost` / `127.0.0.1`   | Default dev server origins       |
+| `http://*/*` (optional)     | User-added custom dev sites      |
 
-> The extension intentionally limits itself to localhost. It does not run on production sites.
+> By default the extension only runs on localhost. Custom sites require explicit user approval via Chrome's permission prompt.
 
 ## Usage
 
@@ -414,6 +415,41 @@ Check the page in Chrome for DOM Review comments and fix them.
 
 Claude Code will read the reviews, fix the code, reply with what was changed, and resolve each review — no manual steps needed.
 
+## Custom Domains
+
+By default DOM Review runs on `http://localhost/*` and `http://127.0.0.1/*`. You can add custom dev sites (LAN IPs, local domains, remote dev servers) from the popup.
+
+### Adding a Site
+
+1. Click the DOM Review icon to open the popup
+2. Scroll to **Allowed Sites** at the bottom
+3. Type a host in the input field and click **Add** (or press Enter)
+4. Chrome will show a permission prompt — click **Allow**
+5. Reload any open tabs on that site
+
+The input accepts flexible formats:
+
+| You type | Saved as |
+| --- | --- |
+| `192.168.1.50:3000` | `http://192.168.1.50:3000/*` |
+| `http://myapp.local:5173/` | `http://myapp.local:5173/*` |
+| `http://dev.example.com/*` | `http://dev.example.com/*` |
+
+### Removing a Site
+
+Click the **×** button next to the custom pattern in the Allowed Sites list. The host permission is automatically revoked.
+
+### Enable / Disable
+
+The toggle switch in the popup header enables or disables the extension globally. When disabled, the toolbar and all UI are hidden. Existing tabs need a reload to reflect the change.
+
+### Notes
+
+- Only HTTP origins are supported (this is a dev tool — HTTPS is not needed)
+- Default patterns (localhost, 127.0.0.1) cannot be removed
+- Each custom site triggers a separate Chrome permission prompt for transparency
+- Custom patterns are synced across devices via `chrome.storage.sync`
+
 ## Vibecoding Workflow Tips
 
 **Let the AI read the page directly.** With MCP, you don't need to describe anything — the agent can see the page, read the reviews, and see the element context all at once.
@@ -431,7 +467,7 @@ Claude Code will read the reviews, fix the code, reply with what was changed, an
 ## Supported Environments
 
 - **Browser:** Chrome (Manifest V3)
-- **Pages:** `http://localhost/*` and `http://127.0.0.1/*`
+- **Pages:** `http://localhost/*` and `http://127.0.0.1/*` by default, plus any user-added custom dev sites
 - **MCP Clients:** Claude Code, Cursor, Windsurf, and any IDE with MCP support
 - **Frameworks:** React, Vue 2, Vue 3, Angular (auto-detected)
 - **CSS Libraries:** Tailwind, Bootstrap (utility classes filtered from selectors)
@@ -445,6 +481,8 @@ Contributions are welcome. Some areas that could use help:
 - [ ] Screenshot capture attached to reviews
 - [ ] Multi-page review sessions
 - [ ] Team collaboration (shared review files)
+- [x] Custom domain support (LAN IPs, local domains)
+- [x] Global enable/disable toggle
 - [ ] Dark/light theme toggle
 
 ## License

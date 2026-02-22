@@ -9,6 +9,17 @@
   const { store, ui, selector, selectorGen, contextCapture,
           commentPanel, badges, sidebar, exportImport } = window.__domReview;
 
+  // 0. Check if extension is enabled before initializing
+  chrome.storage.sync.get('dr_enabled', (result) => {
+    if (result.dr_enabled === false) {
+      console.log('[DOM Review] Extension is disabled.');
+      return;
+    }
+    bootstrap();
+  });
+
+  function bootstrap() {
+
   // 1. Load persisted reviews
   store.loadFromStorage();
 
@@ -112,4 +123,6 @@
   });
 
   console.log('[DOM Review] Extension loaded. Reviews:', store.getAll().length);
+
+  } // end bootstrap
 })();

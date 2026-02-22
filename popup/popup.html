@@ -35,6 +35,46 @@
       padding: 0 6px;
     }
     .badge--zero { background: #475569; }
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .toggle-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 2px;
+      display: flex;
+      align-items: center;
+    }
+    .toggle-track {
+      display: block;
+      width: 34px;
+      height: 18px;
+      border-radius: 9px;
+      background: #475569;
+      position: relative;
+      transition: background 0.2s;
+      pointer-events: none;
+    }
+    .toggle-thumb {
+      display: block;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #94a3b8;
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      transition: transform 0.2s, background 0.2s;
+    }
+    .toggle-btn.active .toggle-track { background: #3b82f6; }
+    .toggle-btn.active .toggle-thumb { transform: translateX(16px); background: #f8fafc; }
+    body.disabled #main-content,
+    body.disabled #no-page,
+    body.disabled .status,
+    body.disabled .divider:first-of-type { opacity: 0.35; pointer-events: none; }
     .status {
       font-size: 13px;
       color: #94a3b8;
@@ -120,12 +160,102 @@
       text-align: center;
       padding: 20px 0;
     }
+
+    /* Allowed Sites */
+    .site-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .site-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 8px;
+      border-radius: 5px;
+      background: #334155;
+      font-size: 12px;
+      font-family: 'SF Mono', 'Consolas', monospace;
+      color: #cbd5e1;
+    }
+    .site-item--default { opacity: 0.7; }
+    .site-label {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .site-tag {
+      font-size: 10px;
+      font-family: system-ui, -apple-system, sans-serif;
+      color: #64748b;
+      background: #1e293b;
+      padding: 1px 6px;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+    .site-remove {
+      background: none;
+      border: none;
+      color: #64748b;
+      cursor: pointer;
+      font-size: 14px;
+      line-height: 1;
+      padding: 0 2px;
+      flex-shrink: 0;
+      transition: color 0.15s;
+    }
+    .site-remove:hover { color: #ef4444; }
+    .add-site-row {
+      display: flex;
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .add-site-input {
+      flex: 1;
+      padding: 6px 8px;
+      border-radius: 5px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: #0f172a;
+      color: #f8fafc;
+      font-size: 12px;
+      font-family: 'SF Mono', 'Consolas', monospace;
+      outline: none;
+    }
+    .add-site-input::placeholder { color: #475569; }
+    .add-site-input:focus { border-color: #3b82f6; }
+    .add-site-btn {
+      padding: 6px 12px;
+      border-radius: 5px;
+      border: none;
+      background: #3b82f6;
+      color: white;
+      font-size: 12px;
+      font-weight: 600;
+      font-family: system-ui, -apple-system, sans-serif;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: background 0.15s;
+    }
+    .add-site-btn:hover { background: #2563eb; }
+    .add-site-error {
+      display: none;
+      font-size: 11px;
+      color: #f87171;
+      margin-top: 4px;
+    }
   </style>
 </head>
 <body>
   <div class="header">
     <h2>DOM Review</h2>
-    <span class="badge badge--zero" id="count">0</span>
+    <div class="header-right">
+      <span class="badge badge--zero" id="count">0</span>
+      <button class="toggle-btn" id="toggle-btn" title="Enable/Disable extension">
+        <span class="toggle-track"><span class="toggle-thumb"></span></span>
+      </button>
+    </div>
   </div>
   <div class="status" id="status">Loading...</div>
   <hr class="divider">
@@ -159,7 +289,18 @@
   </div>
 
   <div id="no-page" class="no-page" style="display:none;">
-    Not a localhost page.<br>Open a local dev server to start reviewing.
+    If the extension is not active on this page.<br>Add the site below or open a local dev server.
+  </div>
+
+  <hr class="divider">
+  <div id="allowed-sites-section">
+    <div class="section-title">Allowed Sites</div>
+    <ul class="site-list" id="site-list"></ul>
+    <div class="add-site-row">
+      <input type="text" class="add-site-input" id="add-site-input" placeholder="192.168.1.50:3000">
+      <button class="add-site-btn" id="add-site-btn">Add</button>
+    </div>
+    <div class="add-site-error" id="add-site-error"></div>
   </div>
 
   <div class="toast" id="toast">Copied!</div>
