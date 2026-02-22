@@ -16,6 +16,7 @@
   let needsRender = false;
   let currentFilter = 'all'; // 'all' | 'open' | 'resolved'
   let currentSort = 'date';  // 'priority' | 'date' | 'category'
+  let currentSearch = '';
 
   const PRIORITY_ORDER = { high: 0, medium: 1, low: 2 };
 
@@ -31,9 +32,19 @@
   }
 
   function filterReviews(reviews) {
-    if (currentFilter === 'open') return reviews.filter(r => !r.resolved);
-    if (currentFilter === 'resolved') return reviews.filter(r => r.resolved);
-    return reviews;
+    let result = reviews;
+    if (currentFilter === 'open') result = result.filter(r => !r.resolved);
+    if (currentFilter === 'resolved') result = result.filter(r => r.resolved);
+    if (currentSearch) {
+      const q = currentSearch.toLowerCase();
+      result = result.filter(r =>
+        (r.comment && r.comment.toLowerCase().includes(q)) ||
+        (r.selector && r.selector.toLowerCase().includes(q)) ||
+        (r.category && r.category.toLowerCase().includes(q)) ||
+        (r.replies && r.replies.some(rp => rp.comment && rp.comment.toLowerCase().includes(q)))
+      );
+    }
+    return result;
   }
 
   function sortReviews(reviews) {
@@ -180,11 +191,12 @@
         ${buildFilterPill('open', `Open (${openCount})`)}
         ${buildFilterPill('resolved', `Resolved (${resolvedCount})`)}
       </div>
-      <div class="dr-sidebar-sort">
+      <div class="dr-sidebar-search-sort">
+        <input type="text" class="dr-search-input" id="dr-sidebar-search" placeholder="Search..." value="${escapeHtml(currentSearch)}">
         <select class="dr-select" id="dr-sidebar-sort">
-          <option value="date"${currentSort === 'date' ? ' selected' : ''}>Sort by Date</option>
-          <option value="priority"${currentSort === 'priority' ? ' selected' : ''}>Sort by Priority</option>
-          <option value="category"${currentSort === 'category' ? ' selected' : ''}>Sort by Category</option>
+          <option value="date"${currentSort === 'date' ? ' selected' : ''}>Date</option>
+          <option value="priority"${currentSort === 'priority' ? ' selected' : ''}>Priority</option>
+          <option value="category"${currentSort === 'category' ? ' selected' : ''}>Category</option>
         </select>
       </div>
       <div class="dr-sidebar-list" id="dr-sidebar-list">
@@ -203,6 +215,15 @@
       if (!pill || !pill.dataset.filter) return;
       currentFilter = pill.dataset.filter;
       render();
+    });
+
+    // Search input
+    container.querySelector('#dr-sidebar-search').addEventListener('input', (e) => {
+      currentSearch = e.target.value;
+      render();
+      // Restore focus and cursor position after re-render
+      const input = container.querySelector('#dr-sidebar-search');
+      if (input) { input.focus(); input.selectionStart = input.selectionEnd = input.value.length; }
     });
 
     // Sort select

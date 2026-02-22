@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "DOM Review",
-  "version": "1.0.3",
+  "version": "1.0.5",
   "description": "Visual code review for live UI — leave comments on DOM elements for AI agents",
   "permissions": ["activeTab", "storage", "scripting"],
   "host_permissions": ["http://localhost/*", "http://127.0.0.1/*"],

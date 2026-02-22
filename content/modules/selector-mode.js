@@ -58,12 +58,16 @@
 
   function handleClick(e) {
     if (!active) return;
+
+    // Let clicks on extension's own UI pass through
+    if (isOwnElement(e.target)) return;
+
     e.preventDefault();
     e.stopPropagation();
     e.stopImmediatePropagation();
 
     const target = hoveredElement || e.target;
-    if (!target || IGNORE_TAGS.has(target.tagName) || isOwnElement(target)) {
+    if (!target || IGNORE_TAGS.has(target.tagName)) {
       return;
     }
 
