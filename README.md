@@ -1,6 +1,10 @@
-# DOM Review
+<p align="center">
+  <img src="chrome-store-assets/store-icon-128.png" alt="DOM Review logo" width="128" height="128">
+</p>
 
-**Visual code review for live UI — leave comments on DOM elements for AI agents.**
+<h1 align="center">DOM Review</h1>
+
+<p align="center"><strong>Visual code review for live UI — leave comments on DOM elements for AI agents.</strong></p>
 
 DOM Review is a Chrome extension that bridges the gap between what you *see* in the browser and what your AI coding agent needs to *fix*. Select any element on your page, leave a comment describing what's wrong, and your AI agent reads the reviews directly from the browser via the [Chrome DevTools MCP server](https://github.com/anthropics/anthropic-quickstarts/tree/main/chrome-devtools-mcp) — no copy-pasting, no file juggling, no context lost.
 
