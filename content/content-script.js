@@ -22,6 +22,8 @@
 
   // 4. Wire toolbar Select -> selector mode
   ui.onSelectClick(() => {
+    sidebar.hide();
+    commentPanel.hide();
     selector.toggle();
     const btn = ui.getShadowRoot().getElementById('dr-btn-select');
     btn.classList.toggle('dr-active', selector.isActive());
@@ -29,7 +31,16 @@
   });
 
   // 5. Wire toolbar Reviews -> sidebar
-  ui.onReviewsClick(() => sidebar.toggle());
+  ui.onReviewsClick(() => {
+    commentPanel.hide();
+    if (selector.isActive()) {
+      selector.toggle();
+      const btn = ui.getShadowRoot().getElementById('dr-btn-select');
+      btn.classList.remove('dr-active');
+      btn.textContent = 'Select';
+    }
+    sidebar.toggle();
+  });
 
   // 6. Wire toolbar Export/Import
   ui.onExportClick(() => exportImport.exportJSON());
@@ -37,6 +48,7 @@
 
   // 7. Wire element selection -> comment panel
   selector.onSelect((element) => {
+    sidebar.hide();
     const selectorData = selectorGen.generate(element);
     const context = contextCapture.capture(element);
     commentPanel.show(element, selectorData, context);
